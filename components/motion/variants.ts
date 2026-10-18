@@ -2,20 +2,38 @@ import type { Transition, Variants } from "motion/react";
 
 export const easeOut: Transition["ease"] = [0.22, 1, 0.36, 1];
 
-/** Hero timeline: copy → card (~0.3s) → score ring+count → rows. Shared easeOut. Entrance only. */
+/**
+ * Hero timeline (once, ≤~1.6s):
+ * copy stagger → card land (shadow) → ring∥CountUp climax → row labels + micro-bars.
+ */
 export const heroTiming = {
   ease: easeOut,
   copyDelay: 0.04,
-  copyStagger: 0.085,
-  cardDelay: 0.3,
-  labelDelay: 0.38,
-  scoreDelay: 0.5,
-  scoreDuration: 0.95,
-  rowsDelay: 0.95,
-  rowStagger: 0.06,
+  copyStagger: 0.07,
+  cardDelay: 0.26,
+  labelDelay: 0.34,
+  scoreDelay: 0.42,
+  scoreDuration: 0.85,
+  rowsDelay: 0.5,
+  rowStagger: 0.05,
+  /** Micro-bars share ring phase (ring primary, bars secondary) */
+  barDelay: 0.42,
+  barDuration: 0.85,
 } as const;
 
-/* --- Shared (Reveal, ScanTool) — keep calm defaults --- */
+/** Real scan result: ring ∥ CountUp ∥ bars same phase, then issues */
+export const scanResultTiming = {
+  ease: easeOut,
+  shellDuration: 0.4,
+  scoreDuration: 0.9,
+  scoreDelay: 0,
+  barDuration: 0.9,
+  barDelay: 0,
+  issuesDelay: 0.95,
+  issueStagger: 0.05,
+} as const;
+
+/* --- Shared --- */
 
 export const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -31,16 +49,6 @@ export const fadeIn: Variants = {
   show: {
     opacity: 1,
     transition: { duration: 0.4, ease: easeOut },
-  },
-};
-
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.96, y: 10 },
-  show: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { duration: 0.55, ease: easeOut },
   },
 };
 
@@ -64,16 +72,17 @@ export const staggerFast: Variants = {
   },
 };
 
-export const rowIn: Variants = {
-  hidden: { opacity: 0, x: 8 },
+export const scanIssuesContainer: Variants = {
+  hidden: {},
   show: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.4, ease: easeOut },
+    transition: {
+      delayChildren: scanResultTiming.issuesDelay,
+      staggerChildren: scanResultTiming.issueStagger,
+    },
   },
 };
 
-/* --- Hero choreography (narrative, no loops) --- */
+/* --- Hero choreography --- */
 
 export const heroCopyContainer: Variants = {
   hidden: {},
@@ -85,23 +94,21 @@ export const heroCopyContainer: Variants = {
   },
 };
 
-/** Soft / short — eyebrow */
 export const heroEyebrow: Variants = {
   hidden: { opacity: 0, y: 8 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: easeOut },
+    transition: { duration: 0.35, ease: easeOut },
   },
 };
 
-/** Slightly longer — headline carries weight */
 export const heroTitle: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.65, ease: easeOut },
+    transition: { duration: 0.55, ease: easeOut },
   },
 };
 
@@ -110,7 +117,7 @@ export const heroLead: Variants = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: easeOut },
+    transition: { duration: 0.45, ease: easeOut },
   },
 };
 
@@ -119,7 +126,7 @@ export const heroActions: Variants = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: easeOut },
+    transition: { duration: 0.4, ease: easeOut },
   },
 };
 
@@ -128,19 +135,25 @@ export const heroPills: Variants = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: easeOut },
+    transition: { duration: 0.35, ease: easeOut },
   },
 };
 
-/** Card is the climax — delayed after copy starts */
+/** Card lands with shadow settle — no scale bounce */
 export const heroCard: Variants = {
-  hidden: { opacity: 0, y: 14, scale: 0.985 },
+  hidden: {
+    opacity: 0,
+    y: 16,
+    boxShadow:
+      "0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 4px 16px rgba(0, 0, 0, 0.12)",
+  },
   show: {
     opacity: 1,
     y: 0,
-    scale: 1,
+    boxShadow:
+      "0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 14px 44px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(45, 212, 191, 0.05)",
     transition: {
-      duration: 0.6,
+      duration: 0.55,
       ease: easeOut,
       delay: heroTiming.cardDelay,
     },
@@ -153,7 +166,7 @@ export const heroCardLabel: Variants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.35,
+      duration: 0.3,
       ease: easeOut,
       delay: heroTiming.labelDelay,
     },
@@ -166,7 +179,7 @@ export const heroScoreBlock: Variants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.4,
+      duration: 0.35,
       ease: easeOut,
       delay: heroTiming.scoreDelay - 0.06,
     },
@@ -188,11 +201,19 @@ export const heroRow: Variants = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: easeOut },
+    transition: { duration: 0.35, ease: easeOut },
   },
 };
 
-/** Instant / no-op when reduced motion is preferred */
+/** Clean-row status dot: opacity fade, not width */
+export const heroCleanDot: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { duration: 0.45, ease: easeOut },
+  },
+};
+
 export function reducedVariants(reduced: boolean | null): Variants {
   if (reduced) {
     return {

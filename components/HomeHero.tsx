@@ -8,6 +8,7 @@ import {
   heroActions,
   heroCard,
   heroCardLabel,
+  heroCleanDot,
   heroCopyContainer,
   heroEyebrow,
   heroLead,
@@ -20,12 +21,16 @@ import {
 } from "./motion/variants";
 import styles from "@/app/home.module.css";
 
-const SAMPLE_ROWS = [
-  { label: "Sections & contact", value: "38/40" },
-  { label: "Impact language", value: "22/30" },
-  { label: "JD keywords", value: "18/25" },
-  { label: "Layout risk", value: "Clean" },
-] as const;
+type SampleRow =
+  | { label: string; kind: "score"; value: string; num: number; max: number }
+  | { label: string; kind: "clean"; value: string };
+
+const SAMPLE_ROWS: SampleRow[] = [
+  { label: "Sections & contact", kind: "score", value: "38/40", num: 38, max: 40 },
+  { label: "Impact language", kind: "score", value: "22/30", num: 22, max: 30 },
+  { label: "JD keywords", kind: "score", value: "18/25", num: 18, max: 25 },
+  { label: "Layout risk", kind: "clean", value: "Clean" },
+];
 
 const SAMPLE_SCORE = 84;
 const RING_R = 54;
@@ -63,22 +68,13 @@ export function HomeHero() {
             className={styles.actions}
             variants={run ? heroActions : undefined}
           >
-            <motion.a
-              className={styles.primaryBtn}
-              href="#scan"
-              whileTap={reduced ? undefined : { scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 500, damping: 32 }}
-            >
+            {/* CTA: brightness/shadow via CSS only — no whileTap scale */}
+            <a className={styles.primaryBtn} href="#scan">
               Start free scan
-            </motion.a>
-            <motion.a
-              className={styles.ghostBtn}
-              href="#how"
-              whileTap={reduced ? undefined : { scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 500, damping: 32 }}
-            >
+            </a>
+            <a className={styles.ghostBtn} href="#how">
               How scoring works
-            </motion.a>
+            </a>
           </motion.div>
           <motion.div
             className={styles.pills}
@@ -97,14 +93,6 @@ export function HomeHero() {
           variants={run ? heroCard : undefined}
           initial={initial}
           animate="show"
-          whileHover={
-            reduced
-              ? undefined
-              : {
-                  y: -2,
-                  transition: { type: "spring", stiffness: 360, damping: 30 },
-                }
-          }
         >
           <motion.p
             className={styles.heroCardLabel}
@@ -193,15 +181,48 @@ export function HomeHero() {
             initial={initial}
             animate="show"
           >
-            {SAMPLE_ROWS.map((row) => (
-              <motion.li
-                key={row.label}
-                variants={run ? heroRow : undefined}
-              >
-                <span>{row.label}</span>
-                <strong>{row.value}</strong>
-              </motion.li>
-            ))}
+            {SAMPLE_ROWS.map((row) => {
+              if (row.kind === "clean") {
+                return (
+                  <motion.li key={row.label} variants={run ? heroRow : undefined}>
+                    <span>{row.label}</span>
+                    <span className={styles.heroCleanStatus}>
+                      <motion.span
+                        className={styles.heroCleanDot}
+                        variants={run ? heroCleanDot : undefined}
+                        aria-hidden="true"
+                      />
+                      <strong>{row.value}</strong>
+                    </span>
+                  </motion.li>
+                );
+              }
+              const pct = Math.min(100, Math.round((row.num / row.max) * 100));
+              return (
+                <motion.li key={row.label} variants={run ? heroRow : undefined}>
+                  <div className={styles.heroRowMain}>
+                    <span>{row.label}</span>
+                    <strong>{row.value}</strong>
+                  </div>
+                  <div className={styles.heroMicroTrack} aria-hidden="true">
+                    <motion.div
+                      className={styles.heroMicroFill}
+                      initial={run ? { width: "0%" } : { width: `${pct}%` }}
+                      animate={{ width: `${pct}%` }}
+                      transition={
+                        run
+                          ? {
+                              duration: heroTiming.barDuration,
+                              ease: heroTiming.ease,
+                              delay: heroTiming.barDelay,
+                            }
+                          : { duration: 0 }
+                      }
+                    />
+                  </div>
+                </motion.li>
+              );
+            })}
           </motion.ul>
         </motion.aside>
       </div>

@@ -1,7 +1,7 @@
 import { ScanTool } from "@/components/ScanTool";
 import { Faq } from "@/components/Faq";
 import { HomeHero } from "@/components/HomeHero";
-import { Reveal, RevealItem } from "@/components/motion/Reveal";
+import { Reveal } from "@/components/motion/Reveal";
 import { site } from "@/site.config";
 import styles from "./home.module.css";
 
@@ -22,46 +22,47 @@ export default function HomePage() {
         <ScanTool />
       </section>
 
+      {/* How / Pricing / FAQ: static — motion only on #scan once-in-view */}
       <section className={styles.section} id="how">
-        <Reveal className={styles.sectionHead}>
+        <div className={styles.sectionHead}>
           <h2>How it works</h2>
           <p>Transparent rules. No black-box “official ATS” claims.</p>
-        </Reveal>
-        <Reveal className={styles.steps} stagger>
-          <RevealItem as="article" className={styles.step}>
+        </div>
+        <div className={styles.steps}>
+          <article className={styles.step}>
             <div className={styles.stepNum}>1</div>
             <h3>Parse your file</h3>
             <p>
               We extract plain text from PDF or DOCX in memory for this request
               only — nothing is saved on the free scanner.
             </p>
-          </RevealItem>
-          <RevealItem as="article" className={styles.step}>
+          </article>
+          <article className={styles.step}>
             <div className={styles.stepNum}>2</div>
             <h3>Score what ATS cares about</h3>
             <p>
               Sections, contact fields, action verbs & metrics, layout risks,
               and optional JD keyword overlap.
             </p>
-          </RevealItem>
-          <RevealItem as="article" className={styles.step}>
+          </article>
+          <article className={styles.step}>
             <div className={styles.stepNum}>3</div>
             <h3>Fix the list</h3>
             <p>
               Every issue includes a concrete how-to-fix. Re-scan after you
               edit — within your daily free quota.
             </p>
-          </RevealItem>
-        </Reveal>
+          </article>
+        </div>
       </section>
 
       <section className={styles.section} id="pricing">
-        <Reveal className={styles.sectionHead}>
+        <div className={styles.sectionHead}>
           <h2>Simple pricing</h2>
           <p>Start free. Pro unlocks unlimited scans, full keywords, and history.</p>
-        </Reveal>
-        <Reveal className={styles.pricingGrid} stagger>
-          <RevealItem className={styles.priceCard}>
+        </div>
+        <div className={styles.pricingGrid}>
+          <div className={styles.priceCard}>
             <h3>Free</h3>
             <p className={styles.price}>
               $0 <span>/ forever</span>
@@ -72,10 +73,8 @@ export default function HomePage() {
               <li>Keyword gaps (truncated)</li>
               <li>No account required</li>
             </ul>
-          </RevealItem>
-          <RevealItem
-            className={`${styles.priceCard} ${styles.priceCardFeatured}`}
-          >
+          </div>
+          <div className={`${styles.priceCard} ${styles.priceCardFeatured}`}>
             <h3>Pro</h3>
             <p className={styles.price}>
               ${site.monetization.premiumPriceMonthly}{" "}
@@ -91,8 +90,8 @@ export default function HomePage() {
               <a href="/pricing">Go to pricing</a> to subscribe via Creem, or{" "}
               <a href="/login">sign in</a> first.
             </p>
-          </RevealItem>
-        </Reveal>
+          </div>
+        </div>
       </section>
 
       <section
@@ -100,7 +99,7 @@ export default function HomePage() {
         id="faq"
         style={{ paddingBottom: "3rem" }}
       >
-        <Reveal className={styles.sectionHead}>
+        <div className={styles.sectionHead}>
           <h2>FAQ</h2>
           <p>
             Common questions about this{" "}
@@ -109,10 +108,8 @@ export default function HomePage() {
             </strong>
             .
           </p>
-        </Reveal>
-        <Reveal>
-          <Faq />
-        </Reveal>
+        </div>
+        <Faq />
       </section>
     </main>
   );

@@ -8,7 +8,11 @@ import {
 import Link from "next/link";
 import { CountUp } from "./motion/CountUp";
 import { useMotionReady } from "./motion/useMotionReady";
-import { fadeUp, staggerFast } from "./motion/variants";
+import {
+  fadeUp,
+  scanIssuesContainer,
+  scanResultTiming,
+} from "./motion/variants";
 import styles from "./ScanTool.module.css";
 
 type Breakdown = {
@@ -85,53 +89,68 @@ const BAR_LABEL: Record<keyof Breakdown, string> = {
   risks: "Layout",
 };
 
-function AnimatedRing({
+const RING_R = 46;
+const RING_C = 2 * Math.PI * RING_R;
+
+/** SVG ring + CountUp — same phase; no fake loading spinner */
+function ScoreRing({
   score,
   color,
-  reduced,
+  run,
+  replayKey,
 }: {
   score: number;
   color: string;
-  reduced: boolean | null;
+  run: boolean;
+  replayKey: string | number;
 }) {
-  const [progress, setProgress] = useState(reduced ? score : 0);
-
-  useEffect(() => {
-    if (reduced) {
-      setProgress(score);
-      return;
-    }
-    setProgress(0);
-    let raf = 0;
-    const start = performance.now();
-    const dur = 900;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / dur);
-      // ease-out cubic
-      const e = 1 - Math.pow(1 - t, 3);
-      setProgress(Math.round(score * e));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [score, reduced]);
+  const progress = Math.min(100, Math.max(0, score)) / 100;
+  const finalOffset = RING_C * (1 - progress);
 
   return (
     <div
       className={styles.ring}
-      style={
-        {
-          "--p": progress,
-          "--ring-color": color,
-        } as React.CSSProperties
-      }
+      role="img"
+      aria-label={`ATS score ${score} out of 100`}
     >
-      <CountUp
-        className={styles.ringValue}
-        to={score}
-        duration={0.9}
-        replayKey={score}
-      />
+      <svg className={styles.ringSvg} viewBox="0 0 108 108" aria-hidden="true">
+        <g transform="rotate(-90 54 54)">
+          <circle className={styles.ringTrack} cx="54" cy="54" r={RING_R} />
+          <motion.circle
+            key={`ring-${replayKey}`}
+            className={styles.ringFill}
+            cx="54"
+            cy="54"
+            r={RING_R}
+            stroke={color}
+            strokeDasharray={RING_C}
+            initial={run ? { strokeDashoffset: RING_C } : { strokeDashoffset: finalOffset }}
+            animate={{ strokeDashoffset: finalOffset }}
+            transition={
+              run
+                ? {
+                    duration: scanResultTiming.scoreDuration,
+                    ease: scanResultTiming.ease,
+                    delay: scanResultTiming.scoreDelay,
+                  }
+                : { duration: 0 }
+            }
+          />
+        </g>
+      </svg>
+      <div className={styles.ringCenter}>
+        {run ? (
+          <CountUp
+            className={styles.ringValue}
+            to={score}
+            duration={scanResultTiming.scoreDuration}
+            delay={scanResultTiming.scoreDelay}
+            replayKey={replayKey}
+          />
+        ) : (
+          <span className={styles.ringValue}>{score}</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -150,6 +169,7 @@ export function ScanTool() {
   const [canSave, setCanSave] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [scanKey, setScanKey] = useState(0);
 
   useEffect(() => {
     fetch("/api/scan")
@@ -188,6 +208,7 @@ export function ScanTool() {
       }
       const ok = data as ScanOk;
       setResult(ok);
+      setScanKey((k) => k + 1);
       setQuota(ok.quota);
       setPremium(Boolean(ok.premium));
       setCanSave(Boolean(ok.canSave));
@@ -204,14 +225,21 @@ export function ScanTool() {
     [result],
   );
 
+  const replayKey = result
+    ? `${scanKey}-${result.score}-${result.wordCount}`
+    : 0;
+
   return (
     <motion.div
       className={styles.shell}
       id="scan-tool"
-      initial={run ? { opacity: 0, y: 20 } : false}
+      initial={run ? { opacity: 0, y: 16 } : false}
       whileInView={run ? { opacity: 1, y: 0 } : undefined}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      transition={{
+        duration: 0.5,
+        ease: scanResultTiming.ease,
+      }}
     >
       <div className={styles.panel}>
         <div className={styles.panelHead}>
@@ -225,7 +253,7 @@ export function ScanTool() {
           </span>
         </div>
 
-        <motion.div
+        <div
           className={`${styles.drop} ${drag ? styles.dropActive : ""}`}
           onDragOver={(e) => {
             e.preventDefault();
@@ -242,26 +270,6 @@ export function ScanTool() {
               document.getElementById("resume-file")?.click();
             }
           }}
-          whileHover={
-            reduced
-              ? undefined
-              : {
-                  scale: 1.01,
-                  borderColor: "rgba(45, 212, 191, 0.75)",
-                  backgroundColor: "rgba(45, 212, 191, 0.14)",
-                }
-          }
-          whileTap={reduced ? undefined : { scale: 0.99 }}
-          animate={
-            drag && !reduced
-              ? {
-                  scale: 1.02,
-                  borderColor: "rgba(45, 212, 191, 0.9)",
-                  backgroundColor: "rgba(45, 212, 191, 0.16)",
-                }
-              : undefined
-          }
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
         >
           <p className={styles.dropTitle}>Drop PDF or DOCX</p>
           <p className={styles.dropMeta}>Max 5MB · text-based files work best</p>
@@ -285,7 +293,7 @@ export function ScanTool() {
             accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
-        </motion.div>
+        </div>
 
         <label className={styles.label} htmlFor="paste">
           Or paste resume text
@@ -310,20 +318,15 @@ export function ScanTool() {
         />
 
         <div className={styles.row}>
-          <motion.button
+          <button
             type="button"
             className={styles.primary}
             disabled={loading}
             onClick={runScan}
-            whileHover={
-              reduced || loading ? undefined : { scale: 1.03, y: -1 }
-            }
-            whileTap={reduced || loading ? undefined : { scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 420, damping: 24 }}
           >
             {loading ? "Scanning…" : "Check ATS score"}
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             type="button"
             className={styles.ghost}
             disabled={loading}
@@ -334,10 +337,9 @@ export function ScanTool() {
               setResult(null);
               setError(null);
             }}
-            whileTap={reduced || loading ? undefined : { scale: 0.96 }}
           >
             Reset
-          </motion.button>
+          </button>
         </div>
 
         <AnimatePresence>
@@ -373,17 +375,21 @@ export function ScanTool() {
             </motion.p>
           ) : (
             <motion.div
-              key={`result-${result.score}-${result.wordCount}`}
-              initial={reduced ? false : { opacity: 0, y: 12 }}
+              key={replayKey}
+              initial={reduced ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reduced ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              exit={reduced ? undefined : { opacity: 0, y: -6 }}
+              transition={{
+                duration: scanResultTiming.shellDuration,
+                ease: scanResultTiming.ease,
+              }}
             >
               <div className={styles.scoreHero}>
-                <AnimatedRing
+                <ScoreRing
                   score={result.score}
                   color={tone?.color ?? "#2dd4bf"}
-                  reduced={reduced}
+                  run={run}
+                  replayKey={replayKey}
                 />
                 <div>
                   <p className={styles.scoreLabel}>ATS-oriented estimate</p>
@@ -396,8 +402,9 @@ export function ScanTool() {
                 </div>
               </div>
 
+              {/* Bars same phase as ring∥CountUp */}
               <div className={styles.bars}>
-                {(Object.keys(BAR_LABEL) as (keyof Breakdown)[]).map((k, i) => {
+                {(Object.keys(BAR_LABEL) as (keyof Breakdown)[]).map((k) => {
                   const max = BAR_MAX[k];
                   const val = result.breakdown[k];
                   const pct = Math.min(100, Math.round((val / max) * 100));
@@ -408,13 +415,13 @@ export function ScanTool() {
                         <motion.div
                           className={styles.barFill}
                           initial={
-                            reduced ? { width: `${pct}%` } : { width: "0%" }
+                            run ? { width: "0%" } : { width: `${pct}%` }
                           }
                           animate={{ width: `${pct}%` }}
                           transition={{
-                            duration: reduced ? 0 : 0.7,
-                            delay: reduced ? 0 : 0.15 + i * 0.06,
-                            ease: [0.22, 1, 0.36, 1],
+                            duration: run ? scanResultTiming.barDuration : 0,
+                            delay: run ? scanResultTiming.barDelay : 0,
+                            ease: scanResultTiming.ease,
                           }}
                         />
                       </div>
@@ -439,15 +446,15 @@ export function ScanTool() {
               ) : null}
               <motion.ul
                 className={styles.issueList}
-                variants={reduced ? undefined : staggerFast}
-                initial={reduced ? false : "hidden"}
+                variants={run ? scanIssuesContainer : undefined}
+                initial={run ? "hidden" : false}
                 animate="show"
               >
                 {result.issues.map((issue) => (
                   <motion.li
                     key={issue.id}
                     className={styles.issue}
-                    variants={reduced ? undefined : fadeUp}
+                    variants={run ? fadeUp : undefined}
                   >
                     <div className={styles.issueHead}>
                       <span
@@ -467,21 +474,13 @@ export function ScanTool() {
                 <>
                   <h3 className={styles.sectionTitle}>Matched keywords</h3>
                   <div className={styles.chips}>
-                    {result.matchedKeywords.slice(0, 16).map((k, i) => (
-                      <motion.span
+                    {result.matchedKeywords.slice(0, 16).map((k) => (
+                      <span
                         key={k}
                         className={`${styles.chip} ${styles.chipOk}`}
-                        initial={
-                          reduced ? false : { opacity: 0, scale: 0.9 }
-                        }
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{
-                          delay: reduced ? 0 : 0.2 + i * 0.03,
-                          duration: 0.3,
-                        }}
                       >
                         {k}
-                      </motion.span>
+                      </span>
                     ))}
                   </div>
                 </>
@@ -496,21 +495,13 @@ export function ScanTool() {
                       : ""}
                   </h3>
                   <div className={styles.chips}>
-                    {result.missingKeywords.map((k, i) => (
-                      <motion.span
+                    {result.missingKeywords.map((k) => (
+                      <span
                         key={k}
                         className={`${styles.chip} ${styles.chipMiss}`}
-                        initial={
-                          reduced ? false : { opacity: 0, scale: 0.9 }
-                        }
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{
-                          delay: reduced ? 0 : 0.25 + i * 0.03,
-                          duration: 0.3,
-                        }}
                       >
                         {k}
-                      </motion.span>
+                      </span>
                     ))}
                   </div>
                 </>
@@ -518,7 +509,7 @@ export function ScanTool() {
 
               <div className={styles.row} style={{ marginTop: "1rem" }}>
                 {canSave ? (
-                  <motion.button
+                  <button
                     type="button"
                     className={styles.ghost}
                     disabled={saving}
@@ -556,10 +547,9 @@ export function ScanTool() {
                         setSaving(false);
                       }
                     }}
-                    whileTap={{ scale: 0.96 }}
                   >
                     {saving ? "Saving…" : "Save to history"}
-                  </motion.button>
+                  </button>
                 ) : (
                   <Link href="/pricing" className={styles.ghost}>
                     Unlock unlimited + history
