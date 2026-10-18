@@ -1,8 +1,9 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { site } from "@/site.config";
 import { CountUp } from "./motion/CountUp";
+import { useMotionReady } from "./motion/useMotionReady";
 import {
   heroActions,
   heroCard,
@@ -31,7 +32,7 @@ const RING_R = 54;
 const RING_C = 2 * Math.PI * RING_R;
 
 export function HomeHero() {
-  const reduced = useReducedMotion();
+  const { reduced, run, initial } = useMotionReady();
   const progress = SAMPLE_SCORE / 100;
   const finalOffset = RING_C * (1 - progress);
 
@@ -39,28 +40,28 @@ export function HomeHero() {
     <section className={styles.hero}>
       <div className={styles.heroInner}>
         <motion.div
-          variants={reduced ? undefined : heroCopyContainer}
-          initial={reduced ? false : "hidden"}
+          variants={run ? heroCopyContainer : undefined}
+          initial={initial}
           animate="show"
         >
           <motion.p
             className={styles.eyebrow}
-            variants={reduced ? undefined : heroEyebrow}
+            variants={run ? heroEyebrow : undefined}
           >
             Free ATS resume scan · no signup
           </motion.p>
-          <motion.h1 variants={reduced ? undefined : heroTitle}>
+          <motion.h1 variants={run ? heroTitle : undefined}>
             ATS resume checker that shows what to fix
           </motion.h1>
           <motion.p
             className={styles.lead}
-            variants={reduced ? undefined : heroLead}
+            variants={run ? heroLead : undefined}
           >
             {site.tagline}
           </motion.p>
           <motion.div
             className={styles.actions}
-            variants={reduced ? undefined : heroActions}
+            variants={run ? heroActions : undefined}
           >
             <motion.a
               className={styles.primaryBtn}
@@ -81,7 +82,7 @@ export function HomeHero() {
           </motion.div>
           <motion.div
             className={styles.pills}
-            variants={reduced ? undefined : heroPills}
+            variants={run ? heroPills : undefined}
           >
             <span className={styles.pill}>PDF & DOCX</span>
             <span className={styles.pill}>ATS resume score</span>
@@ -93,8 +94,8 @@ export function HomeHero() {
         <motion.aside
           className={styles.heroCard}
           aria-label="Sample score preview"
-          variants={reduced ? undefined : heroCard}
-          initial={reduced ? false : "hidden"}
+          variants={run ? heroCard : undefined}
+          initial={initial}
           animate="show"
           whileHover={
             reduced
@@ -107,8 +108,8 @@ export function HomeHero() {
         >
           <motion.p
             className={styles.heroCardLabel}
-            variants={reduced ? undefined : heroCardLabel}
-            initial={reduced ? false : "hidden"}
+            variants={run ? heroCardLabel : undefined}
+            initial={initial}
             animate="show"
           >
             Example result
@@ -116,8 +117,8 @@ export function HomeHero() {
 
           <motion.div
             className={styles.heroScoreRing}
-            variants={reduced ? undefined : heroScoreBlock}
-            initial={reduced ? false : "hidden"}
+            variants={run ? heroScoreBlock : undefined}
+            initial={initial}
             animate="show"
             role="img"
             aria-label={`Sample ATS score ${SAMPLE_SCORE} out of 100`}
@@ -152,27 +153,35 @@ export function HomeHero() {
                   cy="60"
                   r={RING_R}
                   strokeDasharray={RING_C}
-                  initial={{ strokeDashoffset: reduced ? finalOffset : RING_C }}
+                  initial={
+                    run
+                      ? { strokeDashoffset: RING_C }
+                      : { strokeDashoffset: finalOffset }
+                  }
                   animate={{ strokeDashoffset: finalOffset }}
                   transition={
-                    reduced
-                      ? { duration: 0 }
-                      : {
+                    run
+                      ? {
                           duration: heroTiming.scoreDuration,
                           ease: heroTiming.ease,
                           delay: heroTiming.scoreDelay,
                         }
+                      : { duration: 0 }
                   }
                 />
               </g>
             </svg>
             <div className={styles.heroScoreCenter}>
               <p className={styles.heroCardValue}>
-                <CountUp
-                  to={SAMPLE_SCORE}
-                  duration={heroTiming.scoreDuration}
-                  delay={reduced ? 0 : heroTiming.scoreDelay}
-                />
+                {run ? (
+                  <CountUp
+                    to={SAMPLE_SCORE}
+                    duration={heroTiming.scoreDuration}
+                    delay={heroTiming.scoreDelay}
+                  />
+                ) : (
+                  <span>{SAMPLE_SCORE}</span>
+                )}
                 <span className={styles.heroCardMax}>/100</span>
               </p>
             </div>
@@ -180,14 +189,14 @@ export function HomeHero() {
 
           <motion.ul
             className={styles.heroCardList}
-            variants={reduced ? undefined : heroRowsContainer}
-            initial={reduced ? false : "hidden"}
+            variants={run ? heroRowsContainer : undefined}
+            initial={initial}
             animate="show"
           >
             {SAMPLE_ROWS.map((row) => (
               <motion.li
                 key={row.label}
-                variants={reduced ? undefined : heroRow}
+                variants={run ? heroRow : undefined}
               >
                 <span>{row.label}</span>
                 <strong>{row.value}</strong>

@@ -4,10 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AnimatePresence,
   motion,
-  useReducedMotion,
 } from "motion/react";
 import Link from "next/link";
 import { CountUp } from "./motion/CountUp";
+import { useMotionReady } from "./motion/useMotionReady";
 import { fadeUp, staggerFast } from "./motion/variants";
 import styles from "./ScanTool.module.css";
 
@@ -137,7 +137,7 @@ function AnimatedRing({
 }
 
 export function ScanTool() {
-  const reduced = useReducedMotion();
+  const { reduced, run } = useMotionReady();
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
   const [jd, setJd] = useState("");
@@ -208,8 +208,8 @@ export function ScanTool() {
     <motion.div
       className={styles.shell}
       id="scan-tool"
-      initial={reduced ? false : { opacity: 0, y: 20 }}
-      whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+      initial={run ? { opacity: 0, y: 20 } : false}
+      whileInView={run ? { opacity: 1, y: 0 } : undefined}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
     >
@@ -364,7 +364,7 @@ export function ScanTool() {
             <motion.p
               key="empty"
               className={styles.empty}
-              initial={reduced ? false : { opacity: 0 }}
+              initial={run ? { opacity: 0 } : false}
               animate={{ opacity: 1 }}
               exit={reduced ? undefined : { opacity: 0 }}
             >

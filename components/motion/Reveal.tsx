@@ -1,8 +1,9 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { fadeUp, staggerContainer } from "./variants";
+import { useMotionReady } from "./useMotionReady";
 
 type RevealProps = {
   children: ReactNode;
@@ -20,7 +21,7 @@ export function Reveal({
   delay = 0,
   stagger = false,
 }: RevealProps) {
-  const reduced = useReducedMotion();
+  const { reduced, run, initial } = useMotionReady();
   const Comp = motion[as];
 
   if (reduced) {
@@ -31,11 +32,15 @@ export function Reveal({
   return (
     <Comp
       className={className}
-      variants={stagger ? staggerContainer : fadeUp}
-      initial="hidden"
-      whileInView="show"
+      variants={run ? (stagger ? staggerContainer : fadeUp) : undefined}
+      initial={initial}
+      whileInView={run ? "show" : undefined}
       viewport={{ once: true, amount: 0.2, margin: "0px 0px -40px 0px" }}
-      transition={stagger ? undefined : { delay, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      transition={
+        run && !stagger
+          ? { delay, duration: 0.55, ease: [0.22, 1, 0.36, 1] }
+          : undefined
+      }
     >
       {children}
     </Comp>
@@ -51,7 +56,7 @@ export function RevealItem({
   className?: string;
   as?: "div" | "article" | "li";
 }) {
-  const reduced = useReducedMotion();
+  const { reduced, run } = useMotionReady();
   const Comp = motion[as];
 
   if (reduced) {
@@ -60,7 +65,7 @@ export function RevealItem({
   }
 
   return (
-    <Comp className={className} variants={fadeUp}>
+    <Comp className={className} variants={run ? fadeUp : undefined}>
       {children}
     </Comp>
   );
