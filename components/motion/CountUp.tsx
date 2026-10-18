@@ -7,6 +7,8 @@ type CountUpProps = {
   to: number;
   from?: number;
   duration?: number;
+  /** Delay before counting starts (sync with ring) */
+  delay?: number;
   className?: string;
   /** Re-run when this key changes (e.g. scan result id) */
   replayKey?: string | number;
@@ -16,6 +18,7 @@ export function CountUp({
   to,
   from = 0,
   duration = 0.9,
+  delay = 0,
   className,
   replayKey,
 }: CountUpProps) {
@@ -30,11 +33,12 @@ export function CountUp({
     setValue(from);
     const controls = animate(from, to, {
       duration,
+      delay,
       ease: [0.22, 1, 0.36, 1],
       onUpdate: (v) => setValue(Math.round(v)),
     });
     return () => controls.stop();
-  }, [to, from, duration, reduced, replayKey]);
+  }, [to, from, duration, delay, reduced, replayKey]);
 
   return <span className={className}>{value}</span>;
 }
