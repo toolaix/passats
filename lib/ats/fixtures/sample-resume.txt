@@ -1,0 +1,25 @@
+Jordan Lee
+jordan.lee@email.com | (415) 555-0198 | San Francisco, CA | linkedin.com/in/jordanlee
+
+Summary
+Product-minded software engineer with 6 years building full-stack web apps. Led migrations to cloud infrastructure and shipped features used by 200k+ users.
+
+Skills
+JavaScript, TypeScript, React, Node.js, PostgreSQL, AWS, Docker, CI/CD, GraphQL, REST APIs, Agile
+
+Experience
+Senior Software Engineer — Northwind Labs, San Francisco
+2021 – Present
+- Led a team of 4 engineers to rebuild the billing service; reduced checkout latency 35%.
+- Designed and implemented GraphQL APIs serving 1.2M requests/day.
+- Automated CI/CD pipelines on AWS; cut release cycle from 2 weeks to 2 days.
+- Collaborated with product to launch a referral program that increased signups 18%.
+
+Software Engineer — Contoso Retail
+2018 – 2021
+- Built React storefront components used across 12 brands.
+- Optimized PostgreSQL queries; improved p95 page load by 40%.
+- Developed internal tooling that saved ~10 hours/week for support staff.
+
+Education
+B.S. Computer Science — State University, 2018

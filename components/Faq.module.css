@@ -1,0 +1,42 @@
+.wrap {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.item {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.65rem;
+  overflow: hidden;
+}
+
+.item summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 1rem 1.15rem;
+  font-weight: 650;
+  color: #fff;
+}
+
+.item summary::-webkit-details-marker {
+  display: none;
+}
+
+.item summary::after {
+  content: "+";
+  float: right;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.item[open] summary::after {
+  content: "–";
+}
+
+.item p {
+  margin: 0;
+  padding: 0 1.15rem 1.1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}

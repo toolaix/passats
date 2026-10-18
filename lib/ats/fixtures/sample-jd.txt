@@ -1,0 +1,15 @@
+We are hiring a Senior Software Engineer to build customer-facing products.
+
+Requirements:
+- 5+ years experience with JavaScript and TypeScript
+- Strong React and Node.js skills
+- Experience with AWS, Docker, and CI/CD
+- Familiarity with GraphQL and REST APIs
+- PostgreSQL or similar relational databases
+- Agile / Scrum collaboration
+- Ability to lead projects and mentor engineers
+
+Preferred:
+- Machine learning basics
+- Kubernetes
+- Terraform
