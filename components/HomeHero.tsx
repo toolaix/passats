@@ -5,11 +5,21 @@ import { site } from "@/site.config";
 import { CountUp } from "./motion/CountUp";
 import {
   fadeUp,
-  floatY,
+  rowIn,
   scaleIn,
   staggerContainer,
+  staggerFast,
 } from "./motion/variants";
 import styles from "@/app/home.module.css";
+
+const SAMPLE_ROWS = [
+  { label: "Sections & contact", value: "38/40" },
+  { label: "Impact language", value: "22/30" },
+  { label: "JD keywords", value: "18/25" },
+  { label: "Layout risk", value: "Clean" },
+] as const;
+
+const SAMPLE_SCORE = 84;
 
 export function HomeHero() {
   const reduced = useReducedMotion();
@@ -76,32 +86,60 @@ export function HomeHero() {
           variants={reduced ? undefined : scaleIn}
           initial={reduced ? false : "hidden"}
           animate="show"
+          whileHover={
+            reduced
+              ? undefined
+              : {
+                  y: -3,
+                  transition: { type: "spring", stiffness: 380, damping: 28 },
+                }
+          }
           style={{ originY: 0.5 }}
         >
-          <motion.div
-            variants={reduced ? undefined : floatY}
-            initial="rest"
-            animate={reduced ? "rest" : "float"}
-          >
+          <div className={styles.heroCardTop}>
             <p className={styles.heroCardLabel}>Example result</p>
             <p className={styles.heroCardValue}>
-              <CountUp to={84} duration={1.1} />
+              <CountUp to={SAMPLE_SCORE} duration={0.7} />
+              <span className={styles.heroCardMax}>/100</span>
             </p>
-            <ul className={styles.heroCardList}>
-              <li>
-                Sections & contact <strong>38/40</strong>
-              </li>
-              <li>
-                Impact language <strong>22/30</strong>
-              </li>
-              <li>
-                JD keywords <strong>18/25</strong>
-              </li>
-              <li>
-                Layout risk <strong>Clean</strong>
-              </li>
-            </ul>
-          </motion.div>
+            <div
+              className={styles.heroScoreTrack}
+              role="progressbar"
+              aria-valuenow={SAMPLE_SCORE}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Sample ATS score"
+            >
+              <motion.div
+                className={styles.heroScoreFill}
+                initial={reduced ? { scaleX: 1 } : { scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={
+                  reduced
+                    ? { duration: 0 }
+                    : { duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.15 }
+                }
+                style={{ originX: 0 }}
+              />
+            </div>
+          </div>
+
+          <motion.ul
+            className={styles.heroCardList}
+            variants={reduced ? undefined : staggerFast}
+            initial={reduced ? false : "hidden"}
+            animate="show"
+          >
+            {SAMPLE_ROWS.map((row) => (
+              <motion.li
+                key={row.label}
+                variants={reduced ? undefined : rowIn}
+              >
+                <span>{row.label}</span>
+                <strong>{row.value}</strong>
+              </motion.li>
+            ))}
+          </motion.ul>
         </motion.aside>
       </div>
     </section>

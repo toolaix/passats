@@ -111,6 +111,12 @@
   border-radius: 20px;
   padding: 1.25rem;
   backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  will-change: transform;
+}
+
+.heroCardTop {
+  margin-bottom: 1rem;
 }
 
 .heroCardLabel {
@@ -122,11 +128,36 @@
 }
 
 .heroCardValue {
-  margin: 0.15rem 0 0.9rem;
+  margin: 0.15rem 0 0.65rem;
   font-size: 2.6rem;
   font-weight: 800;
   letter-spacing: -0.05em;
   color: #fff;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+}
+
+.heroCardMax {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.45);
+  letter-spacing: 0;
+}
+
+.heroScoreTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.heroScoreFill {
+  height: 100%;
+  width: 84%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2dd4bf, #5eead4);
 }
 
 .heroCardList {
