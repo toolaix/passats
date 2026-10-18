@@ -24,38 +24,83 @@ function parseBucket(raw: string | undefined): DayBucket {
   }
 }
 
-export async function getScanQuota(): Promise<{
+export type ScanQuota = {
   used: number;
   limit: number;
   remaining: number;
-}> {
+  unlimited: boolean;
+  tier: "anonymous" | "signed_in" | "premium";
+};
+
+export function freeLimitForTier(tier: "anonymous" | "signed_in" | "premium"): number {
+  if (tier === "premium") return Number.POSITIVE_INFINITY;
+  if (tier === "signed_in") return site.limits.signedInScansPerDay;
+  return site.limits.freeScansPerDay;
+}
+
+export async function getScanQuota(opts?: {
+  unlimited?: boolean;
+  tier?: ScanQuota["tier"];
+}): Promise<ScanQuota> {
+  const tier = opts?.tier ?? "anonymous";
+  if (opts?.unlimited || tier === "premium") {
+    return {
+      used: 0,
+      limit: Number.POSITIVE_INFINITY,
+      remaining: Number.POSITIVE_INFINITY,
+      unlimited: true,
+      tier: "premium",
+    };
+  }
   const jar = await cookies();
   const bucket = parseBucket(jar.get(COOKIE)?.value);
-  const limit = site.limits.freeScansPerDay;
+  const limit = freeLimitForTier(tier);
   return {
     used: bucket.count,
     limit,
     remaining: Math.max(0, limit - bucket.count),
+    unlimited: false,
+    tier,
   };
 }
 
 /** Returns false if over limit. Caller should still set cookie when incrementing. */
-export async function consumeScan(): Promise<{
+export async function consumeScan(opts?: {
+  unlimited?: boolean;
+  tier?: ScanQuota["tier"];
+}): Promise<{
   ok: boolean;
   used: number;
   limit: number;
   remaining: number;
-  setCookieValue: string;
+  unlimited: boolean;
+  tier: ScanQuota["tier"];
+  setCookieValue: string | null;
 }> {
+  const tier = opts?.tier ?? "anonymous";
+  if (opts?.unlimited || tier === "premium") {
+    return {
+      ok: true,
+      used: 0,
+      limit: Number.POSITIVE_INFINITY,
+      remaining: Number.POSITIVE_INFINITY,
+      unlimited: true,
+      tier: "premium",
+      setCookieValue: null,
+    };
+  }
+
   const jar = await cookies();
   const bucket = parseBucket(jar.get(COOKIE)?.value);
-  const limit = site.limits.freeScansPerDay;
+  const limit = freeLimitForTier(tier);
   if (bucket.count >= limit) {
     return {
       ok: false,
       used: bucket.count,
       limit,
       remaining: 0,
+      unlimited: false,
+      tier,
       setCookieValue: JSON.stringify(bucket),
     };
   }
@@ -65,6 +110,8 @@ export async function consumeScan(): Promise<{
     used: next.count,
     limit,
     remaining: Math.max(0, limit - next.count),
+    unlimited: false,
+    tier,
     setCookieValue: JSON.stringify(next),
   };
 }

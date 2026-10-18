@@ -6,6 +6,7 @@ import {
   motion,
   useReducedMotion,
 } from "motion/react";
+import Link from "next/link";
 import { CountUp } from "./motion/CountUp";
 import { fadeUp, staggerFast } from "./motion/variants";
 import styles from "./ScanTool.module.css";
@@ -41,11 +42,25 @@ type ScanOk = {
   wordCount: number;
   detectedSections: string[];
   disclaimer: string;
-  quota: { used: number; limit: number; remaining: number };
+  premium?: boolean;
+  canSave?: boolean;
+  tier?: string;
+  quota: {
+    used: number;
+    limit: number | null;
+    remaining: number | null;
+    unlimited?: boolean;
+  };
   source: string;
 };
 
-type Quota = { used: number; limit: number; remaining: number };
+type Quota = {
+  used: number;
+  limit: number | null;
+  remaining: number | null;
+  unlimited?: boolean;
+  tier?: string;
+};
 
 function scoreTone(score: number) {
   if (score >= 80) return { label: "Strong ATS readiness", color: "#34d399" };
@@ -131,11 +146,18 @@ export function ScanTool() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanOk | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
+  const [premium, setPremium] = useState(false);
+  const [canSave, setCanSave] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch("/api/scan")
       .then((r) => r.json())
-      .then((d) => setQuota(d.quota))
+      .then((d) => {
+        setQuota(d.quota);
+        setPremium(Boolean(d.premium));
+      })
       .catch(() => undefined);
   }, []);
 
@@ -164,8 +186,12 @@ export function ScanTool() {
         );
         throw new Error(data.error || "Scan failed");
       }
-      setResult(data as ScanOk);
-      setQuota(data.quota);
+      const ok = data as ScanOk;
+      setResult(ok);
+      setQuota(ok.quota);
+      setPremium(Boolean(ok.premium));
+      setCanSave(Boolean(ok.canSave));
+      setSaveMsg(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scan failed");
     } finally {
@@ -191,9 +217,11 @@ export function ScanTool() {
         <div className={styles.panelHead}>
           <h2>Free ATS resume scan</h2>
           <span className={styles.quota}>
-            {quota
-              ? `${quota.remaining} of ${quota.limit} free left today`
-              : "3 free scans / day"}
+            {quota?.unlimited
+              ? "Unlimited (Pro)"
+              : quota && quota.remaining != null && quota.limit != null
+                ? `${quota.remaining} of ${quota.limit} free left today`
+                : "3 free scans / day"}
           </span>
         </div>
 
@@ -404,8 +432,9 @@ export function ScanTool() {
               </h3>
               {result.issuesTruncated ? (
                 <p className={styles.truncatedNote}>
-                  Free plan shows top {result.issues.length} issues. Full list
-                  unlocks with Pro later.
+                  Free plan shows top {result.issues.length} of{" "}
+                  {result.issuesTotal} issues.{" "}
+                  <Link href="/pricing">Upgrade to Pro</Link> for the full list.
                 </p>
               ) : null}
               <motion.ul
@@ -486,6 +515,63 @@ export function ScanTool() {
                   </div>
                 </>
               ) : null}
+
+              <div className={styles.row} style={{ marginTop: "1rem" }}>
+                {canSave ? (
+                  <motion.button
+                    type="button"
+                    className={styles.ghost}
+                    disabled={saving}
+                    onClick={async () => {
+                      setSaving(true);
+                      setSaveMsg(null);
+                      try {
+                        const res = await fetch("/api/scans", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            score: result.score,
+                            breakdown: result.breakdown,
+                            issues: result.issues,
+                            matchedKeywords: result.matchedKeywords,
+                            missingKeywords: result.missingKeywords,
+                            hasJobDescription: result.hasJobDescription,
+                            wordCount: result.wordCount,
+                            source: result.source,
+                            resultSummary: {
+                              score: result.score,
+                              issuesTotal: result.issuesTotal,
+                              missingTotal: result.missingTotal,
+                            },
+                          }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Save failed");
+                        setSaveMsg("Saved to history.");
+                      } catch (e) {
+                        setSaveMsg(
+                          e instanceof Error ? e.message : "Save failed",
+                        );
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    whileTap={{ scale: 0.96 }}
+                  >
+                    {saving ? "Saving…" : "Save to history"}
+                  </motion.button>
+                ) : (
+                  <Link href="/pricing" className={styles.ghost}>
+                    Unlock unlimited + history
+                  </Link>
+                )}
+                {premium ? (
+                  <Link href="/history" className={styles.ghost}>
+                    View history
+                  </Link>
+                ) : null}
+              </div>
+              {saveMsg ? <p className={styles.truncatedNote}>{saveMsg}</p> : null}
 
               <p className={styles.disclaimer}>{result.disclaimer}</p>
             </motion.div>

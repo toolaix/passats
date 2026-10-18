@@ -58,7 +58,7 @@ export default function HomePage() {
       <section className={styles.section} id="pricing">
         <Reveal className={styles.sectionHead}>
           <h2>Simple pricing</h2>
-          <p>Start free. Pro unlocks unlimited scans and full reports (W3).</p>
+          <p>Start free. Pro unlocks unlimited scans, full keywords, and history.</p>
         </Reveal>
         <Reveal className={styles.pricingGrid} stagger>
           <RevealItem className={styles.priceCard}>
@@ -85,10 +85,11 @@ export default function HomePage() {
               <li>Unlimited scans</li>
               <li>Full issue & keyword lists</li>
               <li>PDF report export (soon)</li>
-              <li>Saved scan history (soon)</li>
+              <li>Saved scan history</li>
             </ul>
             <p className={styles.mutedNote}>
-              Checkout via Creem lands in W3 — placeholder price only for now.
+              <a href="/pricing">Go to pricing</a> to subscribe via Creem, or{" "}
+              <a href="/login">sign in</a> first.
             </p>
           </RevealItem>
         </Reveal>

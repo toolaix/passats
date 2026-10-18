@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { scoreResume } from "@/lib/ats/score";
 import { parseUpload } from "@/lib/ats/parse";
-import { consumeScan, SCAN_COOKIE } from "@/lib/ats/rate-limit";
+import { consumeScan, getScanQuota, SCAN_COOKIE } from "@/lib/ats/rate-limit";
+import { tryGetCurrentUser } from "@/lib/auth/session";
+import { isPremium } from "@/lib/premium";
 import { site } from "@/site.config";
 
 export const runtime = "nodejs";
@@ -11,9 +13,34 @@ function truncateForFree<T>(items: T[], n: number): { items: T[]; truncated: boo
   return { items: items.slice(0, n), truncated: true };
 }
 
+async function resolveAccess(): Promise<{
+  tier: "anonymous" | "signed_in" | "premium";
+  unlimited: boolean;
+  userId: string | null;
+}> {
+  const user = await tryGetCurrentUser();
+  if (!user) return { tier: "anonymous", unlimited: false, userId: null };
+  let premium = false;
+  try {
+    premium = await isPremium(user.id);
+  } catch {
+    premium = false;
+  }
+  if (!premium) {
+    const flag = process.env.DEV_PREMIUM || "";
+    if (flag === "1" || flag.toLowerCase() === "true") premium = true;
+  }
+  if (premium) return { tier: "premium", unlimited: true, userId: user.id };
+  return { tier: "signed_in", unlimited: false, userId: user.id };
+}
+
 export async function POST(req: Request) {
   try {
-    const quota = await consumeScan();
+    const access = await resolveAccess();
+    const quota = await consumeScan({
+      unlimited: access.unlimited,
+      tier: access.tier,
+    });
     if (!quota.ok) {
       const res = NextResponse.json(
         {
@@ -22,16 +49,20 @@ export async function POST(req: Request) {
           used: quota.used,
           limit: quota.limit,
           remaining: 0,
+          tier: quota.tier,
           upgradeHint: site.monetization.premiumPriceLabel,
+          pricingUrl: "/pricing",
         },
         { status: 429 },
       );
-      res.cookies.set(SCAN_COOKIE, quota.setCookieValue, {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 48,
-      });
+      if (quota.setCookieValue) {
+        res.cookies.set(SCAN_COOKIE, quota.setCookieValue, {
+          httpOnly: true,
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 60 * 48,
+        });
+      }
       return res;
     }
 
@@ -45,20 +76,21 @@ export async function POST(req: Request) {
       paste || null,
     );
 
-    // Score in-memory only — do not persist resume text
     const result = scoreResume({
       resumeText: upload.text,
       jobDescription: jd || undefined,
     });
 
-    const issuesCap = truncateForFree(
-      result.issues,
-      site.limits.freeIssuesShown,
-    );
-    const missingCap = truncateForFree(
-      result.missingKeywords,
-      site.limits.freeMissingKeywordsShown,
-    );
+    const showFull = access.unlimited;
+    const issuesCap = showFull
+      ? { items: result.issues, truncated: false }
+      : truncateForFree(result.issues, site.limits.freeIssuesShown);
+    const missingCap = showFull
+      ? { items: result.missingKeywords, truncated: false }
+      : truncateForFree(
+          result.missingKeywords,
+          site.limits.freeMissingKeywordsShown,
+        );
 
     const res = NextResponse.json({
       ok: true,
@@ -76,19 +108,25 @@ export async function POST(req: Request) {
       wordCount: result.wordCount,
       detectedSections: result.detectedSections,
       disclaimer: result.disclaimer,
+      premium: access.unlimited,
+      tier: access.tier,
+      canSave: access.unlimited && Boolean(access.userId),
       quota: {
         used: quota.used,
-        limit: quota.limit,
-        remaining: quota.remaining,
+        limit: quota.unlimited ? null : quota.limit,
+        remaining: quota.unlimited ? null : quota.remaining,
+        unlimited: quota.unlimited,
       },
     });
 
-    res.cookies.set(SCAN_COOKIE, quota.setCookieValue, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 48,
-    });
+    if (quota.setCookieValue) {
+      res.cookies.set(SCAN_COOKIE, quota.setCookieValue, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 48,
+      });
+    }
 
     return res;
   } catch (err) {
@@ -98,7 +136,19 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  const { getScanQuota } = await import("@/lib/ats/rate-limit");
-  const q = await getScanQuota();
-  return NextResponse.json({ quota: q });
+  const access = await resolveAccess();
+  const q = await getScanQuota({
+    unlimited: access.unlimited,
+    tier: access.tier,
+  });
+  return NextResponse.json({
+    quota: {
+      used: q.used,
+      limit: q.unlimited ? null : q.limit,
+      remaining: q.unlimited ? null : q.remaining,
+      unlimited: q.unlimited,
+      tier: q.tier,
+    },
+    premium: access.unlimited,
+  });
 }

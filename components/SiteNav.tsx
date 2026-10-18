@@ -40,9 +40,9 @@ export function SiteNav() {
         </Link>
         <nav className={styles.links} aria-label="Primary">
           <Link href="/#scan">Free scan</Link>
-          <Link href="/#how">How it works</Link>
-          <Link href="/#faq">FAQ</Link>
-          <Link href="/#pricing">Pricing</Link>
+          <Link href="/pricing">Pricing</Link>
+          <Link href="/history">History</Link>
+          <Link href="/login">Sign in</Link>
           <motion.div
             whileHover={reduced ? undefined : { scale: 1.04 }}
             whileTap={reduced ? undefined : { scale: 0.96 }}

@@ -32,6 +32,7 @@ export const site = {
   },
   limits: {
     freeScansPerDay: 3,
+    signedInScansPerDay: 10,
     freeIssuesShown: 5,
     freeMissingKeywordsShown: 8,
     maxUploadBytes: 5 * 1024 * 1024,

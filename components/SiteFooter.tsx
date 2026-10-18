@@ -17,7 +17,8 @@ export function SiteFooter() {
           <div className={styles.links}>
             <Link href="/#scan">Scan</Link>
             <Link href="/#faq">FAQ</Link>
-            <Link href="/#pricing">Pricing</Link>
+            <Link href="/pricing">Pricing</Link>
+            <Link href="/login">Sign in</Link>
             <Link href="/privacy">Privacy</Link>
           </div>
         </div>

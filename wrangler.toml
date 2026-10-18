@@ -1,0 +1,17 @@
+# PassATS — OpenNext Cloudflare Worker + D1
+# Daily deploys: Git-bound Cloudflare Pages/Workers. Do NOT wrangler pages deploy to prod routinely.
+name = "passats"
+main = ".open-next/worker.js"
+compatibility_date = "2026-10-17"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# D1 — create DB once, then bind database_id from dashboard / wrangler d1 create
+[[d1_databases]]
+binding = "DB"
+database_name = "passats"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations/d1"

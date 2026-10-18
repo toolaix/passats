@@ -1,15 +1,24 @@
 {
   "name": "passats",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "test:score": "node lib/ats/score.test.mjs",
-    "test": "npm run test:score"
+    "test:creem": "node lib/creem/signature.test.mjs",
+    "test": "npm run test:score && npm run test:creem",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf-build": "opennextjs-cloudflare build",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "pages:build": "opennextjs-cloudflare build",
+    "db:migrate:local": "wrangler d1 migrations apply passats --local",
+    "db:migrate:remote": "wrangler d1 migrations apply passats --remote",
+    "db:list:local": "wrangler d1 migrations list passats --local"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.12",
     "mammoth": "^1.8.0",
     "motion": "^14.3.0",
     "next": "^15.0.0",
@@ -21,9 +30,14 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "wrangler": "^4.151.1"
   },
   "engines": {
     "node": ">=20"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261012.1": true
   }
 }
